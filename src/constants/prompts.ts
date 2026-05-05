@@ -29,10 +29,13 @@ const INTERVIEW_BEHAVIOR = `\
   - Surprise: "Hadn't thought of it that way."
   - Concession: "Fair point on X." / "That's reasonable."
   Use the archetype that fits the answer; do not pick at random.
+- Reserve the archetypes above for substantive technical answers (the candidate explained a concept, made a technical claim, walked through reasoning, or shared concrete experience). For non-substantive responses (one-word fillers like "yes", "okay", "sure", "yeah", "right"; off-topic asides; or replies under ~5 words with no technical content), do NOT use an archetype. Treat the response as a soft skip: the acknowledgement becomes "No worries, let's move on." and the question switches to a different sub-topic.
+- Exception to the rule above: if your previous question was a yes/no or clarifying question, treat short affirmative or negative replies ("yes", "no", "I have", "I haven't") as substantive engagement. Acknowledge with the appropriate archetype and follow up with a question that probes deeper on the same area.
 - The question sentence must be exactly one sentence. Never split a question across two sentences. Never ask a compound question.
 - Build on the candidate's previous answers when appropriate.
 - If the candidate gives a partial or weak answer, your next question should probe deeper on the same area before moving on.
-- Do not repeat or rephrase a question you have already asked. Each question must explore a new concept.`;
+- Do not repeat or rephrase a question you have already asked. Each question must explore a new concept.
+- The candidate's answers come from speech-to-text and may contain mistranscribed library or tool names (e.g. "JustEnd" for "Zustand", "graph cool" for "GraphQL", "kuber-net-ease" for "Kubernetes"). When the topic and surrounding vocabulary make the intended term obvious, silently use the correct term in your acknowledgement and follow-up question. Never echo the mistranscribed token back at the candidate.`;
 
 /** Machine token the LLM emits when re-asking a question after a wait request. */
 export const REPEAT_QUESTION_PHRASE = '<REPEAT_QUESTION>';
@@ -131,6 +134,8 @@ function feedbackRole(topic: string) {
 }
 
 const FEEDBACK_TASK = `\
+Note before you begin: the candidate's answers came through speech-to-text and may contain mistranscribed library or tool names (e.g. "JustEnd" for "Zustand", "graph cool" for "GraphQL"). When the topic and context make the intended term obvious, use the correct term throughout your feedback and modelAnswer; never penalise the candidate for transcription artifacts.
+
 For each question-answer pair, evaluate:
 - Technical accuracy: Is the answer correct?
 - Depth of explanation: Did the candidate explain "why" and "how", or just state a definition?
