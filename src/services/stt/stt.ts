@@ -33,28 +33,64 @@ export async function transcribeAudio(
   );
 
   try {
-    if (streaming && streamingId) {
-      return await streaming.commit(
-        {
-          requestId: streamingId,
-          model: STT_MODEL,
-          // Rust prepends a WAV header when sampleRate is set, so the
-          // filename/content-type must advertise WAV regardless of what
-          // the recorder's fallback blob reports.
-          filename: 'recording.wav',
-          contentType: 'audio/wav',
-          sampleRate: CAPTURE_SAMPLE_RATE,
-        },
-        signal,
-      );
-    }
-    return await platform.http.openai.transcribe(
-      { model: STT_MODEL, audio: blob, filename: filenameFor(blob) },
-      signal,
-    );
+    const raw =
+      streaming && streamingId
+        ? await streaming.commit(
+            {
+              requestId: streamingId,
+              model: STT_MODEL,
+              // Rust prepends a WAV header when sampleRate is set, so the
+              // filename/content-type must advertise WAV regardless of what
+              // the recorder's fallback blob reports.
+              filename: 'recording.wav',
+              contentType: 'audio/wav',
+              sampleRate: CAPTURE_SAMPLE_RATE,
+            },
+            signal,
+          )
+        : await platform.http.openai.transcribe(
+            { model: STT_MODEL, audio: blob, filename: filenameFor(blob) },
+            signal,
+          );
+    return applyTranscriptCorrections(raw);
   } finally {
     mark('transcribe_end');
   }
+}
+
+// Each correction has a `safe` pattern that always rewrites and an optional
+// `guarded` pattern that only rewrites when `context` proves intent.
+// Lowercase variants of a library name are ambiguous in English ("just end
+// the call") so they require a domain-vocabulary witness.
+interface TranscriptCorrection {
+  safe: RegExp;
+  guarded?: RegExp;
+  context?: RegExp;
+  replacement: string;
+}
+
+const CORRECTIONS: TranscriptCorrection[] = [
+  {
+    // Capitalized "JustEnd" / "Just End" is unambiguously the library name.
+    safe: /\bJust\s*End\b/g,
+    // Lowercase "just end" needs a state-management witness to avoid
+    // rewriting phrases like "let's just end the call". "Zustand" itself
+    // counts as a witness so chains within one answer resolve correctly.
+    guarded: /\bjust\s*end\b/gi,
+    context:
+      /\b(zustand|redux|jotai|recoil|mobx|context\s*api|state\s*management|store|hooks?|use\s*state|use\s*reducer)\b/i,
+    replacement: 'Zustand',
+  },
+];
+
+export function applyTranscriptCorrections(text: string): string {
+  return CORRECTIONS.reduce((acc, { safe, guarded, context, replacement }) => {
+    const afterSafe = acc.replace(safe, replacement);
+    if (guarded && context && context.test(afterSafe)) {
+      return afterSafe.replace(guarded, replacement);
+    }
+    return afterSafe;
+  }, text);
 }
 
 // OpenAI's transcription endpoint uses the filename extension to infer the

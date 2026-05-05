@@ -7,7 +7,7 @@ import { mark } from '@/lib/perf';
 import { platform } from '@/platform';
 import { encodeWavFromInt16 } from '@/lib/wavEncoder';
 
-/** RMS threshold below which audio is considered silence (0–1 scale).
+/** RMS threshold below which audio is considered silence (0-1 scale).
  * Set above typical laptop fan / ambient noise levels (~0.01-0.04). */
 const SILENCE_THRESHOLD = 0.06;
 /** How often (ms) we sample the audio level to check for silence. */
@@ -46,10 +46,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   /** First chunk marks `transcribe_start` in the perf log so stage deltas
    *  are measured from the moment Rust starts accumulating audio. */
   const firstChunkMarkedRef = useRef(false);
-  /** Pending `pushChunk` invokes for the current recording. Each chunk's
-   *  promise is stored here so the finalizer can await them all before
-   *  surfacing the blob — otherwise the commit can race ahead of the last
-   *  chunk and drain an incomplete buffer on Rust. Cleared per recording. */
+  /** Pending `pushChunk` invokes. Awaited in the finalizer so the commit
+   *  doesn't race past the last chunk and drain a partial Rust buffer. */
   const pendingPushesRef = useRef<Promise<void>[]>([]);
 
   const releaseCaptureGraph = useCallback(() => {
@@ -68,12 +66,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   }, []);
 
   const buildWavBlob = useCallback((): Blob => {
-    // Always returns a Blob, even when no chunks arrived (fast-stop before
-    // the worklet could emit anything). An empty 44-byte WAV trips the
-    // downstream `MIN_BLOB_SIZE` check and routes into SKIP_NO_RESPONSE —
-    // matching the pre-9.3 MediaRecorder behaviour. Returning `null` here
-    // would leave the session stuck in `user_recording` because the
-    // audioBlob-change effect only fires on a transition.
+    // Fast-stop emits a 44-byte empty WAV, not null, so the MIN_BLOB_SIZE
+    // check downstream routes silent recordings into SKIP_NO_RESPONSE.
     const chunks = pcmChunksRef.current;
     const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
     const merged = new Int16Array(total);
@@ -90,9 +84,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     return new Blob([wav], { type: 'audio/wav' });
   }, []);
 
-  // Hoisted so `finishRecording` can stash a finaliser callback that the
-  // worklet's port.onmessage handler calls once the 'flushed' sentinel
-  // lands (see startRecording for the handler).
+  // Hoisted so finishRecording can stash a finaliser the onmessage
+  // handler invokes when the 'flushed' sentinel arrives.
   const finalizeRef = useRef<(() => void) | null>(null);
 
   const finishRecording = useCallback(() => {
@@ -101,10 +94,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     if (!workletNodeRef.current || finalizeRef.current) return;
     mark('mic_stop');
 
-    // Stop the mic track + silence polling immediately so the caller sees
-    // `isRecording` go to false right away, but keep the worklet's port
-    // open long enough to drain the trailing batch. The finaliser (below)
-    // tears down the audio graph once the 'flushed' sentinel arrives.
+    // Stop the mic and polling now so isRecording flips false right away,
+    // but keep the worklet port open until the 'flushed' sentinel.
     if (silenceTimerRef.current) {
       clearInterval(silenceTimerRef.current);
       silenceTimerRef.current = null;
@@ -118,14 +109,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     finalizeRef.current = () => {
       finalizeRef.current = null;
       const blob = buildWavBlob();
-      // Await in-flight chunk pushes before the blob goes live. The consumer
-      // (stt.ts) kicks off `transcribe_commit` on the blob, and that commit
-      // drains the Rust buffer — if the last chunk's invoke is still in
-      // flight, the buffer would be incomplete. The pending array is
-      // snapshotted + cleared so a second recording can't pile on, and
-      // `Promise.all([])` resolves in the next microtask so the empty case
-      // needs no special path. Both resolution and rejection of individual
-      // pushes publish the blob (errors were swallowed at push time).
+      // Await in-flight pushChunk invokes before publishing the blob: the
+      // commit drains the Rust buffer and would race the last chunk
+      // otherwise. Snapshot+clear so a new recording can't piggyback.
       const pending = pendingPushesRef.current;
       pendingPushesRef.current = [];
       const publish = () => {
@@ -135,10 +121,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       void Promise.all(pending).then(publish, publish);
     };
 
-    // Ask the worklet to post its tail, followed by the 'flushed' sentinel
-    // that triggers finalizeRef.current() in the onmessage handler. Audio
-    // thread is separate from the main thread, so awaiting this roundtrip
-    // is the only way to capture the full recording.
+    // Worklet posts its tail then a 'flushed' sentinel; the message is
+    // the only way to capture trailing audio across the thread boundary.
     workletNodeRef.current.port.postMessage('flush');
   }, [buildWavBlob, releaseCaptureGraph]);
 
@@ -248,12 +232,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
           // Wrap in a fresh Uint8Array so the underlying buffer is the exact
           // PCM range; Tauri's binary IPC ships it zero-copy.
           const bytes = new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
-          // Track the promise so the finalizer can await all in-flight
-          // pushes before the consumer commits — otherwise the commit can
-          // race ahead of the last chunk and drain an incomplete buffer.
-          // Individual push failures are swallowed here (commit surfaces a
-          // classified error anyway); the `.catch` also prevents
-          // unhandled-rejection warnings inside Promise.all.
+          // Track the promise so the finalizer awaits in-flight pushes.
+          // Per-push errors are swallowed; the commit surfaces a classified
+          // error and the .catch keeps Promise.all from unhandled-reject.
           pendingPushesRef.current.push(streaming.pushChunk(newStreamingId, bytes).catch(() => {}));
         }
       };
@@ -261,9 +242,8 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       const source = audioContext.createMediaStreamSource(stream);
       sourceNodeRef.current = source;
       source.connect(workletNode);
-      // Do NOT connect workletNode → destination — we don't want to play the
-      // user's mic back through their speakers. The worklet still runs
-      // because the graph is active via source→worklet.
+      // Do NOT connect workletNode to destination; that would play the mic
+      // back through the speakers. The graph stays active via source→worklet.
 
       // Silence detection via AnalyserNode on the same context. Parallel
       // branch off `source` so we get the raw 48kHz frames (more accurate
@@ -277,11 +257,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       const recordingStartedAt = Date.now();
 
       silenceTimerRef.current = setInterval(() => {
-        // Skip while the tab is hidden: getFloatTimeDomainData returns stale
-        // or zeroed samples when the AudioContext is suspended, which would
-        // otherwise let `silentSince` accumulate against fake silence and
-        // trigger finishRecording mid-answer.
-        if (document.visibilityState !== 'visible') return;
+        // Skip only when the context is actually suspended; visibility
+        // alone would hang recordings made while the user is elsewhere.
+        if (audioContext.state === 'suspended') return;
         analyser.getFloatTimeDomainData(rmsSamples);
         let sumSquares = 0;
         for (let i = 0; i < rmsSamples.length; i++) sumSquares += rmsSamples[i] * rmsSamples[i];
@@ -330,17 +308,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     };
   }, [releaseCaptureGraph]);
 
-  /*
-    Recording deliberately survives tab/window blur. The browser's mic
-    indicator plus the SILENCE_TIMEOUT_SECONDS auto-stop are enough; an
-    aggressive blur-stop also fires for DevTools, address bar focus, and
-    multi-monitor clicks, which used to truncate real answers.
-
-    Defensive: some browsers (notably Safari historically) suspend the
-    AudioContext when the tab is hidden, which silently drops worklet
-    frames. On visibility return, resume the context if it landed in
-    'suspended' so capture continues from where it left off.
-  */
+  // Resume the context if Safari/iOS suspended it while the tab was
+  // hidden. We deliberately don't auto-stop on blur (DevTools and address
+  // bar focus also fire blur and used to truncate real answers).
   useEffect(() => {
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return;

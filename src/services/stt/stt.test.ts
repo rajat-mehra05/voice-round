@@ -1,6 +1,6 @@
 import { expect, test, vi } from 'vitest';
 import { platform } from '@/platform';
-import { transcribeAudio } from '@/services/stt/stt';
+import { transcribeAudio, applyTranscriptCorrections } from '@/services/stt/stt';
 
 // The OpenAI transcription request is multipart/form-data, which jsdom
 // currently can't round-trip through MSW (file handling differs from the
@@ -55,4 +55,45 @@ test('recordings streamed during the turn commit by id instead of re-uploading t
   expect(typeof commitArgs.model).toBe('string');
   // Full-blob transcribe was NOT called — that's the point of 9.2.
   expect(fallbackTranscribe).not.toHaveBeenCalled();
+});
+
+test('applyTranscriptCorrections rewrites the proper-noun form unconditionally', () => {
+  // STT proper-cases what it thinks is a library name. Both shapes always rewrite.
+  expect(applyTranscriptCorrections('I prefer JustEnd over Redux')).toBe(
+    'I prefer Zustand over Redux',
+  );
+  expect(applyTranscriptCorrections('Just End is gaining popularity')).toBe(
+    'Zustand is gaining popularity',
+  );
+  // Capitalized form rewrites even with no other state-management context.
+  expect(applyTranscriptCorrections('My favourite library is JustEnd.')).toBe(
+    'My favourite library is Zustand.',
+  );
+});
+
+test('applyTranscriptCorrections rewrites lowercase variant only when domain context is present', () => {
+  // Domain witness present — rewrite is safe.
+  expect(applyTranscriptCorrections('we use just end with Redux')).toBe(
+    'we use Zustand with Redux',
+  );
+  expect(applyTranscriptCorrections('store backed by just end')).toBe('store backed by Zustand');
+
+  // No domain witness — must NOT touch the phrase.
+  expect(applyTranscriptCorrections('let me just end the call')).toBe('let me just end the call');
+  expect(applyTranscriptCorrections("we'll just end the meeting at 3")).toBe(
+    "we'll just end the meeting at 3",
+  );
+
+  // First-pass rewrites a capitalized variant; the resulting "Zustand" then
+  // counts as a witness, enabling rewrite of a later lowercase occurrence.
+  expect(applyTranscriptCorrections('I tried JustEnd. Then I used just end again.')).toBe(
+    'I tried Zustand. Then I used Zustand again.',
+  );
+});
+
+test('applyTranscriptCorrections leaves unrelated text alone', () => {
+  expect(applyTranscriptCorrections('Redux Toolkit handles async actions')).toBe(
+    'Redux Toolkit handles async actions',
+  );
+  expect(applyTranscriptCorrections('I justified the cost')).toBe('I justified the cost');
 });

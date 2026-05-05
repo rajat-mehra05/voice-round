@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Info } from 'lucide-react';
 import { TOPIC_LABELS, DEFAULT_QUESTION_COUNT, toValidTopic } from '@/constants/topics';
 import { useInterviewSession } from '@/hooks/useInterviewSession/useInterviewSession';
 import { useQuitGuard } from '@/hooks/useQuitGuard/useQuitGuard';
@@ -11,6 +12,17 @@ import { StatusIndicator } from './StatusIndicator';
 import { RecordingTimer } from './RecordingTimer';
 import { SessionErrorDisplay } from './SessionErrorDisplay';
 import { MicCheckGate } from './MicCheckGate';
+import type { InterviewState } from '@/hooks/useInterviewSession/types';
+
+// Statuses where the session is not actively engaging the user. The Stop
+// button additionally hides during 'skipping' (the auto-advance window
+// where Stop would be confusing).
+const INACTIVE_STATUSES: readonly InterviewState[] = [
+  'idle',
+  'completed',
+  'error',
+  'generating_feedback',
+];
 
 export function Session() {
   const [searchParams] = useSearchParams();
@@ -68,6 +80,20 @@ export function Session() {
       />
 
       <MicCheckGate onReady={handleMicReady}>
+        {!INACTIVE_STATUSES.includes(state.status) && (
+          <div
+            role="note"
+            aria-live="polite"
+            className="flex w-full max-w-2xl items-start gap-2 border-2 border-black bg-neo-secondary/50 px-3 py-2 text-xs font-medium text-black shadow-neo-sm"
+          >
+            <Info className="mt-[1px] h-4 w-4 shrink-0" aria-hidden="true" strokeWidth={2.5} />
+            <span>
+              Keep this tab focused for the smoothest run. Switching windows may slow audio capture
+              and the auto-advance between questions.
+            </span>
+          </div>
+        )}
+
         <ConversationLog
           history={state.history}
           currentQuestion={state.currentQuestion}
@@ -99,9 +125,7 @@ export function Session() {
           </Link>
         )}
 
-        {!['idle', 'completed', 'error', 'generating_feedback', 'skipping'].includes(
-          state.status,
-        ) && (
+        {!INACTIVE_STATUSES.includes(state.status) && state.status !== 'skipping' && (
           <button
             onClick={() => setStopDialogOpen(true)}
             aria-label="Stop interview"

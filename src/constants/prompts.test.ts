@@ -113,3 +113,27 @@ test('feedback prompt omits scope context when scope is absent', () => {
   const prompt = buildFeedbackPrompt({ topic: 'Python' });
   expect(prompt).not.toContain('Scope context:');
 });
+
+test('interview prompt teaches the LLM to interpret STT mishears charitably', () => {
+  // This rule is the load-bearing fix for STT-mistranscribed library names
+  // (e.g. "JustEnd" → "Zustand"). If the rule moves or disappears, the LLM
+  // will start echoing mishearings back at the candidate.
+  const prompt = buildInterviewPrompt({ topic: 'React' });
+  expect(prompt).toContain('speech-to-text');
+  expect(prompt).toContain('mistranscribed');
+  expect(prompt).toContain('Never echo');
+});
+
+test('feedback prompt teaches the grader to interpret STT mishears charitably', () => {
+  const prompt = buildFeedbackPrompt({ topic: 'React' });
+  expect(prompt).toContain('speech-to-text');
+  expect(prompt).toContain('mistranscribed');
+  expect(prompt).toContain('never penalise');
+});
+
+test('interview prompt routes non-substantive replies to a soft skip', () => {
+  // Filler responses ("yes", "okay") must not consume an archetype.
+  const prompt = buildInterviewPrompt({ topic: 'React' });
+  expect(prompt).toContain('non-substantive');
+  expect(prompt).toContain('soft skip');
+});
