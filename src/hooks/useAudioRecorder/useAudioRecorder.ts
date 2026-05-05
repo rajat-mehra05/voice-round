@@ -5,6 +5,7 @@ import { classifyMicError, micError, type MicError } from '@/lib/micError';
 import { watchMicPermission } from '@/lib/micCheck';
 import { mark } from '@/lib/perf';
 import { platform } from '@/platform';
+import { getCurrentPlatform } from '@/lib/detectPlatform';
 import { encodeWavFromInt16 } from '@/lib/wavEncoder';
 
 /** RMS threshold below which audio is considered silence (0-1 scale).
@@ -308,17 +309,24 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     };
   }, [releaseCaptureGraph]);
 
-  // Resume the context if Safari/iOS suspended it while the tab was
-  // hidden. We deliberately don't auto-stop on blur (DevTools and address
-  // bar focus also fire blur and used to truncate real answers).
+  // iOS keeps AudioContext 'running' while hidden but stops frame flow,
+  // which would let the silence guard miss and finish recording early.
+  // Suspending on iOS only preserves the desktop tab-switch UX.
   useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState !== 'visible') return;
+    const isIOS = getCurrentPlatform().os === 'ios';
+    const onVisibilityChange = () => {
       const ctx = audioContextRef.current;
-      if (ctx && ctx.state === 'suspended') void ctx.resume();
+      if (!ctx || ctx.state === 'closed') return;
+      if (document.hidden) {
+        if (isIOS && ctx.state === 'running') {
+          void ctx.suspend().catch(() => undefined);
+        }
+      } else if (ctx.state === 'suspended') {
+        void ctx.resume().catch(() => undefined);
+      }
     };
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, []);
 
   const clearBlob = useCallback(() => setAudioBlob(null), []);
