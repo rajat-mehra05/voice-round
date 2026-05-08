@@ -303,7 +303,11 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       let lastRmsLogAt = 0;
       // Site permission granted but OS layer feeding zero samples — surface
       // a specific error instead of letting silence hide the real cause.
+      // Counts CONSECUTIVE zero polls so transient zeros don't false-trip;
+      // OS-mute always produces literal-zero samples on every poll.
       let osMuteFlagged = false;
+      let consecutiveZeroPolls = 0;
+      const OS_MUTE_POLL_THRESHOLD = Math.ceil(OS_MUTE_THRESHOLD_MS / POLL_INTERVAL_MS);
 
       silenceTimerRef.current = setInterval(() => {
         // Skip only when the context is actually suspended; visibility
@@ -324,14 +328,19 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
           lastRmsLogAt = now;
         }
 
-        // OS-mute trip: RMS exactly 0 for OS_MUTE_THRESHOLD_MS while context
-        // is running and track is live = OS-level mic access denied. Surface
-        // a specific error and stop wasting the user's time waiting.
+        // OS-mute trip: OS_MUTE_POLL_THRESHOLD consecutive zero-RMS polls
+        // while context is running = OS-level mic access denied. Counter
+        // resets on any non-zero so transient zeros (buffer gaps, init
+        // artifacts) don't false-trip.
+        if (rms === 0) {
+          consecutiveZeroPolls++;
+        } else {
+          consecutiveZeroPolls = 0;
+        }
         if (
           !osMuteFlagged &&
-          rms === 0 &&
-          audioContext.state === 'running' &&
-          now - recordingStartedAt >= OS_MUTE_THRESHOLD_MS
+          consecutiveZeroPolls >= OS_MUTE_POLL_THRESHOLD &&
+          audioContext.state === 'running'
         ) {
           osMuteFlagged = true;
           abortWithError(micError('os-muted'));
@@ -355,8 +364,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       setIsRecording(true);
     } catch (err) {
       console.error('[mic] startRecording failed', err);
-      releaseCaptureGraph();
+      // Match abortWithError ordering: flag first so any cleanup side-effect
+      // that ends the track sees stoppingRef = true and skips the disconnect path.
       stoppingRef.current = true;
+      releaseCaptureGraph();
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       const id = streamingIdRef.current;
@@ -371,9 +382,10 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   // Release all resources on unmount
   useEffect(() => {
     return () => {
+      // Flag first for symmetry with abortWithError / startRecording catch.
+      stoppingRef.current = true;
       finalizeRef.current = null;
       releaseCaptureGraph();
-      stoppingRef.current = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       permissionUnsubscribeRef.current?.();
