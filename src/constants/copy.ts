@@ -1,10 +1,10 @@
+import { SILENCE_TIMEOUT_SECONDS } from '@/constants/session';
+
 export const APP_NAME = 'VoiceRoundAI';
 
 export const API_KEY_DESCRIPTION =
   'This app requires your own OpenAI API key. Your key stays on your device and is only sent to OpenAI.';
 export const OPENAI_API_KEYS_URL = 'https://platform.openai.com/api-keys';
-
-import { SILENCE_TIMEOUT_SECONDS } from '@/constants/session';
 
 export const RECORDING_RULES = `Max answer length: 4 minutes · Auto-proceeds after ${SILENCE_TIMEOUT_SECONDS} seconds of silence`;
 

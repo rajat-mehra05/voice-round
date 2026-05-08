@@ -331,7 +331,7 @@ If a bad SW deploy ships and users are stuck loading broken cached chunks, deplo
 Steps in order:
 
 1. **Copy the kill-switch over the live SW path.** Rename `public/sw-killswitch.js` to `public/sw.js` (or otherwise arrange for `dist/sw.js` to contain the kill-switch contents on the next build). The path must match `/sw.js` exactly — different paths leave the live SW in place because clients only re-fetch what they registered against.
-2. **Verify Cache-Control on `/sw.js` is `no-cache`.** Browsers honour up to 24h cache on SW responses by default. The vercel.json in this repo already sets `Cache-Control: no-cache, no-store, must-revalidate` for `/sw.js` — confirm the deployed response has that header (`curl -I https://your-domain/sw.js | grep -i cache-control`). Without it, the kill-switch can sit unfetched on user devices for hours.
+2. **Verify Cache-Control on `/sw.js` is `no-cache`.** Browsers honour up to 24h cache on SW responses by default. The vercel.json in this repo already sets `Cache-Control: no-cache, no-store, must-revalidate` for `/sw.js` — confirm the deployed response has that header (`curl -I https://voiceroundai.in/sw.js | grep -i cache-control`). Without it, the kill-switch can sit unfetched on user devices for hours.
 3. **Deploy.** Within minutes (or the next visit, whichever comes first) every controlled client picks up the new SW, runs the activation handler, and reloads.
 4. **Confirm rollback landed.** Open the deployed origin in a tab that previously had the bad SW. DevTools → **Application** → **Service Workers** should show the kill-switch in `activated` state briefly, then no SW at all. The page should load fresh from the network with no cached resources.
 5. **Clean up.** After all users have rotated through (~24h is a safe estimate), restore the build to its normal state. The next normal deploy installs a fresh SW with no cache or controller leftovers.
@@ -343,7 +343,7 @@ The kill-switch handler intentionally never serves any cached response. Even if 
 The deployed web build serves a strict CSP and Permissions-Policy via [vercel.json](vercel.json). To confirm a deploy's actual response headers:
 
 ```bash
-curl -sI https://your-domain | grep -iE 'content-security-policy|permissions-policy|referrer-policy|cross-origin-opener-policy|strict-transport-security'
+curl -sI https://voiceroundai.in | grep -iE 'content-security-policy|permissions-policy|referrer-policy|cross-origin-opener-policy|strict-transport-security'
 ```
 
 Expect six headers. The most important is `content-security-policy`: its `connect-src` must include `https://api.openai.com` (or the OpenAI SDK calls fail) and `https://api.github.com` (or the desktop-download CTA fails to fetch the latest release manifest). After making changes to the CSP, walk through the home page, the start modal, and one full interview turn with the DevTools console open. Zero CSP violations is the standard.
