@@ -1,4 +1,10 @@
 import { CopyableCommand } from './CopyableCommand';
+import {
+  APP_NAME,
+  INSTALL_MACOS_FALLBACK_COMMAND,
+  INSTALL_OS_WARNING_EYEBROW,
+  INSTALL_OS_WARNING_MAC_FALLBACK_LABEL,
+} from '@/constants/copy';
 
 // Restricted to the OSes for which a Tauri build exists. The PWA install
 // path (mobile + desktop browser) doesn't go through OsWarning at all.
@@ -8,17 +14,12 @@ interface OsWarningProps {
   platform: TauriOs;
 }
 
-// `-dr` is recursive: the DMG drag-install puts the quarantine attribute on
-// nested files inside the bundle too, so a non-recursive `-d` leaves most of
-// the .app still quarantined and the Gatekeeper prompt returns.
-const MAC_QUARANTINE_COMMAND = 'xattr -dr com.apple.quarantine /Applications/VoiceRound.app';
-
 export function OsWarning({ platform }: OsWarningProps) {
   const isMac = platform === 'mac';
   return (
     <div className="flex-1 lg:max-w-md">
       <p className="mb-3 text-xs font-black uppercase tracking-widest text-black/50">
-        Expect a one-time OS warning
+        {INSTALL_OS_WARNING_EYEBROW}
       </p>
       <div className="space-y-4 border-l-4 border-black bg-neo-secondary/30 p-6">
         {isMac ? <MacWarning /> : <WindowsWarning />}
@@ -33,15 +34,15 @@ function MacWarning() {
       <p className="text-sm font-medium text-black/80">
         macOS flags unsigned builds with{' '}
         <span className="font-bold">&ldquo;unidentified developer&rdquo;</span>. Expected for
-        open-source apps. In Finder, <span className="font-bold">right-click</span> VoiceRound in
+        open-source apps. In Finder, <span className="font-bold">right-click</span> {APP_NAME} in
         Applications → <span className="font-bold">Open</span> →{' '}
         <span className="font-bold">Open</span>. macOS trusts it from then on.
       </p>
       <div>
         <p className="mb-2 text-xs font-bold uppercase tracking-wider text-black/60">
-          If that doesn&apos;t work, run in Terminal:
+          {INSTALL_OS_WARNING_MAC_FALLBACK_LABEL}
         </p>
-        <CopyableCommand command={MAC_QUARANTINE_COMMAND} />
+        <CopyableCommand command={INSTALL_MACOS_FALLBACK_COMMAND} />
       </div>
     </>
   );

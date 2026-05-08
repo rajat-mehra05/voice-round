@@ -1,8 +1,8 @@
-# VoiceRound
+# VoiceRoundAI
 
 AI-powered mock interviewer that helps developers practice technical interviews. The AI asks questions via voice, you answer verbally and you get detailed feedback with ratings.
 
-![VoiceRound home screen](public/home.png)
+![VoiceRoundAI home screen](public/home.png)
 
 ## Why I Built This
 
@@ -186,19 +186,19 @@ Builds are **unsigned**, so the OS shows a one-time warning the first time you l
 ### Installing on macOS
 
 1. Pick the right `.dmg` for your Mac:
-   - **Apple Silicon (M1, M2, M3, M4):** `VoiceRound_x.y.z_aarch64.dmg`
-   - **Intel:** `VoiceRound_x.y.z_x64.dmg`
+   - **Apple Silicon (M1, M2, M3, M4):** `VoiceRoundAI_x.y.z_aarch64.dmg`
+   - **Intel:** `VoiceRoundAI_x.y.z_x64.dmg`
 
    Not sure which you have? Click the Apple menu in the top-left, then **About This Mac**. If the chip line says "Apple", you want the aarch64 build. If it says "Intel", you want the x64 build.
 
-2. Open the DMG and drag VoiceRound into Applications.
-3. First launch will say **"VoiceRound cannot be opened because the developer cannot be verified."** Click Cancel.
-4. In Finder, **right-click** (or Ctrl-click) the VoiceRound app in Applications and choose **Open**. Click **Open** again in the confirmation dialog. macOS trusts the app from then on.
+2. Open the DMG and drag VoiceRoundAI into Applications.
+3. First launch will say **"VoiceRoundAI cannot be opened because the developer cannot be verified."** Click Cancel.
+4. In Finder, **right-click** (or Ctrl-click) the VoiceRoundAI app in Applications and choose **Open**. Click **Open** again in the confirmation dialog. macOS trusts the app from then on.
 
 If right-click → Open doesn't offer the trust option (happens on some newer macOS builds), run this once in Terminal:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/VoiceRound.app
+xattr -dr com.apple.quarantine /Applications/VoiceRoundAI.app
 ```
 
 ### Installing on Windows
@@ -297,7 +297,7 @@ The web build runs as a PWA on mobile. The same audio pipeline is used, with a f
 - **AudioContext starts suspended on iOS** even when triggered from a user gesture if any prior `await` consumed the activation. The TTS playback path (`src/services/tts/playback.ts`) and the recorder (`src/hooks/useAudioRecorder/useAudioRecorder.ts`) both call `audioContext.resume()` explicitly to handle this
 - **Sample rate is fixed to hardware on iOS** (typically 48k or 44.1k) regardless of what's passed to `new AudioContext({ sampleRate })`. The downsample worklet at `public/audio/downsample-worklet.js` derives its resample ratio from the runtime `sampleRate` global rather than assuming 48k
 - **Tab backgrounding** suspends the AudioContext mid-TTS. The playback path listens for `visibilitychange` and explicitly suspends and resumes the context on hide and show so the transition is deterministic across iOS versions
-- **Lock-screen / Control Center** shows a "VoiceRound — Mock interview" tile during TTS via the MediaSession API. Lock-screen pause and play map to AudioContext suspend and resume
+- **Lock-screen / Control Center** shows a tile titled `VoiceRoundAI` with subtitle `Mock interview` during TTS via the MediaSession API. Lock-screen pause and play map to AudioContext suspend and resume
 - **Currently deferred:** full mid-recording pause-and-resume on `visibilitychange`. The desktop `blur` handler still finishes the recording and submits a partial answer if the user backgrounds the tab during their answer. Tracked as a follow-up because the resume UI needs to integrate with the interview state machine
 - **Currently deferred:** streaming TTS playback on iOS via `ManagedMediaSource`. The web path uses `AudioContext.decodeAudioData` which waits for the full TTS response before playing. Streaming would shave ~300-1000ms off first-audio latency. Plan section PWA.5 has the implementation outline
 
@@ -331,7 +331,7 @@ If a bad SW deploy ships and users are stuck loading broken cached chunks, deplo
 Steps in order:
 
 1. **Copy the kill-switch over the live SW path.** Rename `public/sw-killswitch.js` to `public/sw.js` (or otherwise arrange for `dist/sw.js` to contain the kill-switch contents on the next build). The path must match `/sw.js` exactly — different paths leave the live SW in place because clients only re-fetch what they registered against.
-2. **Verify Cache-Control on `/sw.js` is `no-cache`.** Browsers honour up to 24h cache on SW responses by default. The vercel.json in this repo already sets `Cache-Control: no-cache, no-store, must-revalidate` for `/sw.js` — confirm the deployed response has that header (`curl -I https://your-domain/sw.js | grep -i cache-control`). Without it, the kill-switch can sit unfetched on user devices for hours.
+2. **Verify Cache-Control on `/sw.js` is `no-cache`.** Browsers honour up to 24h cache on SW responses by default. The vercel.json in this repo already sets `Cache-Control: no-cache, no-store, must-revalidate` for `/sw.js` — confirm the deployed response has that header (`curl -I https://voiceroundai.in/sw.js | grep -i cache-control`). Without it, the kill-switch can sit unfetched on user devices for hours.
 3. **Deploy.** Within minutes (or the next visit, whichever comes first) every controlled client picks up the new SW, runs the activation handler, and reloads.
 4. **Confirm rollback landed.** Open the deployed origin in a tab that previously had the bad SW. DevTools → **Application** → **Service Workers** should show the kill-switch in `activated` state briefly, then no SW at all. The page should load fresh from the network with no cached resources.
 5. **Clean up.** After all users have rotated through (~24h is a safe estimate), restore the build to its normal state. The next normal deploy installs a fresh SW with no cache or controller leftovers.
@@ -343,7 +343,7 @@ The kill-switch handler intentionally never serves any cached response. Even if 
 The deployed web build serves a strict CSP and Permissions-Policy via [vercel.json](vercel.json). To confirm a deploy's actual response headers:
 
 ```bash
-curl -sI https://your-domain | grep -iE 'content-security-policy|permissions-policy|referrer-policy|cross-origin-opener-policy|strict-transport-security'
+curl -sI https://voiceroundai.in | grep -iE 'content-security-policy|permissions-policy|referrer-policy|cross-origin-opener-policy|strict-transport-security'
 ```
 
 Expect six headers. The most important is `content-security-policy`: its `connect-src` must include `https://api.openai.com` (or the OpenAI SDK calls fail) and `https://api.github.com` (or the desktop-download CTA fails to fetch the latest release manifest). After making changes to the CSP, walk through the home page, the start modal, and one full interview turn with the DevTools console open. Zero CSP violations is the standard.

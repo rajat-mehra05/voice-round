@@ -7,6 +7,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import {
+  COMMON_GOT_IT,
+  INSTALL_IOS_DESCRIPTION,
+  INSTALL_IOS_FOOTER,
+  INSTALL_IOS_STEP_3_NAME_HINT,
+  INSTALL_IOS_TITLE,
+} from '@/constants/copy';
 
 interface IosInstallModalProps {
   open: boolean;
@@ -40,11 +47,8 @@ export function IosInstallModal({ open, onOpenChange }: IosInstallModalProps) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Install on iPhone or iPad</DialogTitle>
-          <DialogDescription>
-            iOS doesn&apos;t support one-tap install. The Add to Home Screen flow takes about ten
-            seconds.
-          </DialogDescription>
+          <DialogTitle>{INSTALL_IOS_TITLE}</DialogTitle>
+          <DialogDescription>{INSTALL_IOS_DESCRIPTION}</DialogDescription>
         </DialogHeader>
 
         <ol className="space-y-3 text-sm font-medium text-black/80">
@@ -69,20 +73,17 @@ export function IosInstallModal({ open, onOpenChange }: IosInstallModalProps) {
               3
             </span>
             <span>
-              Confirm the name (VoiceRound) and tap <strong>Add</strong>. The icon appears on your
-              home screen.
+              {INSTALL_IOS_STEP_3_NAME_HINT} <strong>Add</strong>. The icon appears on your home
+              screen.
             </span>
           </li>
         </ol>
 
-        <p className="text-xs font-medium text-black/60">
-          The Add to Home Screen entry only shows in Safari. If you opened this site in Chrome or
-          another iOS browser, switch to Safari first.
-        </p>
+        <p className="text-xs font-medium text-black/60">{INSTALL_IOS_FOOTER}</p>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Got it
+            {COMMON_GOT_IT}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -8,6 +8,21 @@ import {
   type BeforeInstallPromptEvent,
 } from '@/lib/installPrompt';
 import { trackEvent } from '@/lib/analytics';
+import {
+  APP_NAME,
+  INSTALL_DESKTOP_BYOK_LINK,
+  INSTALL_DESKTOP_BYOK_NOTE,
+  INSTALL_DESKTOP_LINUX_BODY,
+  INSTALL_DESKTOP_LINUX_EYEBROW,
+  INSTALL_DESKTOP_PWA_BUTTON,
+  INSTALL_DESKTOP_PWA_LOCKED_HINT,
+  INSTALL_MOBILE_ANDROID_HINT,
+  INSTALL_MOBILE_EYEBROW,
+  INSTALL_MOBILE_FIREFOX_HEADING,
+  INSTALL_MOBILE_FIREFOX_STEP_3,
+  INSTALL_MOBILE_IOS_BUTTON,
+  INSTALL_MOBILE_SUBHEADING,
+} from '@/constants/copy';
 import { DownloadCta } from './DownloadCta';
 import { OsWarning, type TauriOs } from './OsWarning';
 import { IosInstallModal } from './IosInstallModal';
@@ -79,10 +94,10 @@ function MobileInstallCta({ platform, promptEvent }: CtaProps) {
   return (
     <section className="border-4 border-black bg-white p-8 shadow-neo-lg sm:p-12">
       <p className="text-xs font-black uppercase tracking-widest text-black/50">
-        Install on your phone
+        {INSTALL_MOBILE_EYEBROW}
       </p>
       <h2 className="mt-3 text-xl font-black uppercase leading-tight tracking-tight text-black sm:text-2xl">
-        Add VoiceRound to your{' '}
+        Add {APP_NAME} to your{' '}
         <span className="relative inline-block whitespace-nowrap">
           <span className="relative z-10">home screen.</span>
           <span
@@ -91,9 +106,7 @@ function MobileInstallCta({ platform, promptEvent }: CtaProps) {
           />
         </span>
       </h2>
-      <p className="mt-4 text-sm font-medium text-black/70">
-        Opens full-screen, works offline for the app shell, stays one tap away.
-      </p>
+      <p className="mt-4 text-sm font-medium text-black/70">{INSTALL_MOBILE_SUBHEADING}</p>
 
       {platform.os === 'ios' ? (
         <>
@@ -103,14 +116,14 @@ function MobileInstallCta({ platform, promptEvent }: CtaProps) {
             className={`${buttonVariants({ size: 'lg' })} mt-6 h-14 min-w-[240px]`}
           >
             <Download className="h-5 w-5" aria-hidden="true" />
-            Install on iOS
+            {INSTALL_MOBILE_IOS_BUTTON}
           </button>
           <IosInstallModal open={iosOpen} onOpenChange={setIosOpen} />
         </>
       ) : platform.browser === 'firefox' ? (
         // Firefox Android has no beforeinstallprompt; show menu steps instead of a dead button.
         <div className="mt-6 border-2 border-black bg-neo-secondary/30 p-4">
-          <p className="text-sm font-bold text-black">Install via Firefox menu:</p>
+          <p className="text-sm font-bold text-black">{INSTALL_MOBILE_FIREFOX_HEADING}</p>
           <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm font-medium text-black/80">
             <li>
               Tap the menu (<strong>⋮</strong>) at the top right.
@@ -118,7 +131,7 @@ function MobileInstallCta({ platform, promptEvent }: CtaProps) {
             <li>
               Choose <strong>Install</strong>.
             </li>
-            <li>Confirm the icon will appear on your home screen.</li>
+            <li>{INSTALL_MOBILE_FIREFOX_STEP_3}</li>
           </ol>
         </div>
       ) : (
@@ -131,12 +144,9 @@ function MobileInstallCta({ platform, promptEvent }: CtaProps) {
             className={`${buttonVariants({ size: 'lg' })} mt-6 h-14 min-w-[240px] disabled:cursor-not-allowed disabled:opacity-50`}
           >
             <Download className="h-5 w-5" aria-hidden="true" />
-            Install VoiceRound
+            Install {APP_NAME}
           </button>
-          <p className="mt-3 text-sm font-medium text-black/60">
-            If the button is disabled, browse around for a moment then look for the install option
-            in your browser menu.
-          </p>
+          <p className="mt-3 text-sm font-medium text-black/60">{INSTALL_MOBILE_ANDROID_HINT}</p>
         </>
       )}
     </section>
@@ -169,10 +179,10 @@ function DesktopInstallCta({ platform, promptEvent }: CtaProps) {
     return (
       <section className="border-4 border-black bg-white p-8 shadow-neo-lg sm:p-12">
         <p className="text-xs font-black uppercase tracking-widest text-black/50">
-          Install as a web app
+          {INSTALL_DESKTOP_LINUX_EYEBROW}
         </p>
         <h2 className="mt-3 text-xl font-black uppercase leading-tight tracking-tight text-black sm:text-2xl">
-          VoiceRound on{' '}
+          {APP_NAME} on{' '}
           <span className="relative inline-block whitespace-nowrap">
             <span className="relative z-10">your desktop.</span>
             <span
@@ -181,10 +191,7 @@ function DesktopInstallCta({ platform, promptEvent }: CtaProps) {
             />
           </span>
         </h2>
-        <p className="mt-4 text-sm font-medium text-black/70">
-          No native build for Linux. The web app installs from your browser and runs in a standalone
-          window.
-        </p>
+        <p className="mt-4 text-sm font-medium text-black/70">{INSTALL_DESKTOP_LINUX_BODY}</p>
 
         {platform.supportsPwaInstall ? (
           <>
@@ -194,24 +201,24 @@ function DesktopInstallCta({ platform, promptEvent }: CtaProps) {
               disabled={!promptEvent}
               className="mt-6 cursor-pointer border-2 border-black bg-neo-accent px-6 py-3 text-sm font-bold uppercase tracking-wide text-black shadow-neo transition-all hover:-translate-y-0.5 hover:shadow-neo-md disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Install in browser
+              {INSTALL_DESKTOP_PWA_BUTTON}
             </button>
             <p className="mt-3 text-xs font-medium text-black/60">
-              Web app stores your API key in the browser instead of your OS keychain.{' '}
+              {INSTALL_DESKTOP_BYOK_NOTE}{' '}
               <button
                 type="button"
                 onClick={() => setByokOpen(true)}
                 className="cursor-pointer underline hover:text-black"
               >
-                Why the difference?
+                {INSTALL_DESKTOP_BYOK_LINK}
               </button>
             </p>
           </>
         ) : (
           <p className="mt-6 text-sm font-medium text-black/70">
-            Your browser doesn&apos;t support installing this site as a web app. Open VoiceRound in{' '}
+            Your browser doesn&apos;t support installing this site as a web app. Open {APP_NAME} in{' '}
             <strong>Chrome, Edge, or Brave</strong> on Linux to get an installable PWA, or just keep
-            using it in your current browser tab — it works the same either way.
+            using it in your current browser tab. It works the same either way.
           </p>
         )}
         <ByokExplainerModal open={byokOpen} onOpenChange={setByokOpen} />
@@ -230,29 +237,29 @@ function DesktopInstallCta({ platform, promptEvent }: CtaProps) {
       {platform.supportsPwaInstall ? (
         <div className="mt-6 border-t-2 border-black/20 pt-6">
           <p className="text-sm font-bold text-black">
-            Or install as a lightweight web app —{' '}
+            Or install as a lightweight web app.{' '}
             <button
               type="button"
               onClick={() => void handlePwaInstall()}
               disabled={!promptEvent}
               className="underline hover:bg-neo-secondary disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
             >
-              Install in browser
+              {INSTALL_DESKTOP_PWA_BUTTON}
             </button>
             {!promptEvent ? (
               <span className="ml-1 text-xs font-medium text-black/50">
-                (browse around for a moment to unlock)
+                {INSTALL_DESKTOP_PWA_LOCKED_HINT}
               </span>
             ) : null}
           </p>
           <p className="mt-2 text-xs font-medium text-black/60">
-            Web app stores your API key in the browser instead of your OS keychain.{' '}
+            {INSTALL_DESKTOP_BYOK_NOTE}{' '}
             <button
               type="button"
               onClick={() => setByokOpen(true)}
               className="cursor-pointer underline hover:text-black"
             >
-              Why the difference?
+              {INSTALL_DESKTOP_BYOK_LINK}
             </button>
           </p>
           <ByokExplainerModal open={byokOpen} onOpenChange={setByokOpen} />

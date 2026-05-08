@@ -7,6 +7,18 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import {
+  BYOK_DESKTOP_BODY,
+  BYOK_DESKTOP_HEADING,
+  BYOK_FOOTER_NOTE,
+  BYOK_MODAL_DESCRIPTION,
+  BYOK_MODAL_TITLE,
+  BYOK_WEB_BODY,
+  BYOK_WEB_HEADING,
+  BYOK_WEB_RISK_EXTENSIONS,
+  BYOK_WEB_RISK_XSS,
+  COMMON_GOT_IT,
+} from '@/constants/copy';
 
 interface ByokExplainerModalProps {
   open: boolean;
@@ -19,53 +31,35 @@ export function ByokExplainerModal({ open, onOpenChange }: ByokExplainerModalPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Where your API key is stored</DialogTitle>
-          <DialogDescription>
-            VoiceRound is BYOK — you bring your own OpenAI key. Where the key lives depends on which
-            version you install.
-          </DialogDescription>
+          <DialogTitle>{BYOK_MODAL_TITLE}</DialogTitle>
+          <DialogDescription>{BYOK_MODAL_DESCRIPTION}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 text-sm font-medium text-black/80">
           <div className="border-2 border-black bg-white p-3">
             <p className="text-xs font-bold uppercase tracking-wider text-black/60">
-              Desktop app (Tauri)
+              {BYOK_DESKTOP_HEADING}
             </p>
-            <p className="mt-1">
-              Key lives in the OS keychain (macOS Keychain, Windows Credential Manager). All OpenAI
-              traffic is routed through a bundled Rust process so the key never reaches the
-              renderer. Browser extensions on your system can&apos;t read it.
-            </p>
+            <p className="mt-1">{BYOK_DESKTOP_BODY}</p>
           </div>
 
           <div className="border-2 border-black bg-white p-3">
             <p className="text-xs font-bold uppercase tracking-wider text-black/60">
-              Web app (PWA)
+              {BYOK_WEB_HEADING}
             </p>
-            <p className="mt-1">
-              Key lives in the browser&apos;s IndexedDB on this device. Two implications worth
-              knowing:
-            </p>
+            <p className="mt-1">{BYOK_WEB_BODY}</p>
             <ul className="mt-2 list-disc space-y-1 pl-5 text-xs">
-              <li>
-                A successful XSS in the page can read the key and run charges against your OpenAI
-                account.
-              </li>
-              <li>
-                Browser extensions with the right permissions can read IndexedDB on this origin.
-              </li>
+              <li>{BYOK_WEB_RISK_XSS}</li>
+              <li>{BYOK_WEB_RISK_EXTENSIONS}</li>
             </ul>
           </div>
 
-          <p className="text-xs text-black/60">
-            For a personal device with a trusted browser the PWA is fine. The desktop app is a
-            stronger choice on shared machines or where browser extension hygiene is weaker.
-          </p>
+          <p className="text-xs text-black/60">{BYOK_FOOTER_NOTE}</p>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Got it
+            {COMMON_GOT_IT}
           </Button>
         </DialogFooter>
       </DialogContent>

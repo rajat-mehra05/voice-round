@@ -13,15 +13,17 @@ test('clicking the copy button writes the command to the clipboard and briefly s
   });
   vi.useFakeTimers({ shouldAdvanceTime: true });
 
-  render(<CopyableCommand command="xattr -d com.apple.quarantine /Applications/VoiceRound.app" />);
+  render(
+    <CopyableCommand command="xattr -d com.apple.quarantine /Applications/VoiceRoundAI.app" />,
+  );
 
   expect(
-    screen.getByText('xattr -d com.apple.quarantine /Applications/VoiceRound.app'),
+    screen.getByText('xattr -d com.apple.quarantine /Applications/VoiceRoundAI.app'),
   ).toBeInTheDocument();
 
   await user.click(screen.getByRole('button', { name: /copy command to clipboard/i }));
   expect(writeText).toHaveBeenCalledWith(
-    'xattr -d com.apple.quarantine /Applications/VoiceRound.app',
+    'xattr -d com.apple.quarantine /Applications/VoiceRoundAI.app',
   );
   expect(screen.getByRole('button', { name: /copied to clipboard/i })).toBeInTheDocument();
 

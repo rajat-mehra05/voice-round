@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>VoiceRound needs microphone access to record your interview answers.</string>
+    <string>VoiceRoundAI needs microphone access to record your interview answers.</string>
 </dict>
 </plist>
