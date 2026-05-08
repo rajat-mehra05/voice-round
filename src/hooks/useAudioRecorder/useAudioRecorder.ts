@@ -13,6 +13,12 @@ import { encodeWavFromInt16 } from '@/lib/wavEncoder';
 const SILENCE_THRESHOLD = 0.06;
 /** How often (ms) we sample the audio level to check for silence. */
 const POLL_INTERVAL_MS = 200;
+/** Track ends under this elapsed time = startup failure → show error.
+ *  Beyond it, treat external disconnect as "user finished" and finalize. */
+const EARLY_DISCONNECT_MS = 3000;
+/** RMS reads exactly 0 for this long while context is running and track
+ *  is live = OS-level mic access denied; surface as a specific error. */
+const OS_MUTE_THRESHOLD_MS = 5000;
 const WORKLET_URL = `${import.meta.env.BASE_URL}audio/downsample-worklet.js`;
 
 interface UseAudioRecorderReturn {
@@ -50,6 +56,14 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
   /** Pending `pushChunk` invokes. Awaited in the finalizer so the commit
    *  doesn't race past the last chunk and drain a partial Rust buffer. */
   const pendingPushesRef = useRef<Promise<void>[]>([]);
+  /*
+    True while we are intentionally stopping the track ourselves. Per spec
+    track.stop() should not fire 'ended', but Chrome on production HTTPS +
+    PWA service-worker contexts has been observed to fire it anyway. Without
+    this flag the 'ended' handler converts our own teardown into a fake
+    "Microphone disconnected" error.
+  */
+  const stoppingRef = useRef(false);
 
   const releaseCaptureGraph = useCallback(() => {
     if (silenceTimerRef.current) {
@@ -101,6 +115,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       clearInterval(silenceTimerRef.current);
       silenceTimerRef.current = null;
     }
+    stoppingRef.current = true;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     permissionUnsubscribeRef.current?.();
@@ -133,6 +148,9 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
 
   const abortWithError = useCallback(
     (err: MicError) => {
+      // Set first: any side-effect inside releaseCaptureGraph that ends the
+      // track (e.g. ctx.close cascading) must see the intentional-stop flag.
+      stoppingRef.current = true;
       pcmChunksRef.current = [];
       pendingPushesRef.current = [];
       disconnectedRef.current = true;
@@ -156,6 +174,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     setError(null);
     setAudioBlob(null);
     firstChunkMarkedRef.current = false;
+    stoppingRef.current = false;
     pcmChunksRef.current = [];
     pendingPushesRef.current = [];
 
@@ -180,11 +199,34 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       streamRef.current = stream;
       disconnectedRef.current = false;
 
+      const log = import.meta.env.DEV
+        ? (msg: string, extra?: object) => console.log(`[mic] ${msg}`, extra ?? '')
+        : () => {};
+
       const track = stream.getAudioTracks()[0];
       if (track) {
+        const recStartedAt = performance.now();
+        const sinceStart = () => Math.round(performance.now() - recStartedAt);
+        log('track acquired', { readyState: track.readyState, label: track.label });
         track.addEventListener('ended', () => {
-          abortWithError(micError('disconnected'));
+          // Stale-event guard: lagging 'ended' from a previous recording can
+          // fire after a new recording has reset stoppingRef. Bind to *this*
+          // track's lifetime by checking it's still in the current stream.
+          if (!streamRef.current?.getAudioTracks().includes(track)) return;
+          const elapsedMs = sinceStart();
+          log('track ENDED', { elapsedMs, stoppingRef: stoppingRef.current });
+          if (stoppingRef.current) return;
+          // External disconnect: under 3s = startup failure (show error);
+          // 3s+ = mid-recording (finalize captured audio so interview proceeds).
+          if (elapsedMs < EARLY_DISCONNECT_MS) {
+            abortWithError(micError('disconnected'));
+          } else {
+            log('graceful finalize after external disconnect');
+            finishRecording();
+          }
         });
+        track.addEventListener('mute', () => log('track muted', { elapsedMs: sinceStart() }));
+        track.addEventListener('unmute', () => log('track unmuted', { elapsedMs: sinceStart() }));
       }
 
       permissionUnsubscribeRef.current?.();
@@ -256,6 +298,12 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       let silentSince: number | null = null;
       let speechDetected = false;
       const recordingStartedAt = Date.now();
+      // Periodic RMS log (dev only) verifies audio is actually flowing.
+      // Stays at ~0 for many seconds = worklet not receiving samples.
+      let lastRmsLogAt = 0;
+      // Site permission granted but OS layer feeding zero samples — surface
+      // a specific error instead of letting silence hide the real cause.
+      let osMuteFlagged = false;
 
       silenceTimerRef.current = setInterval(() => {
         // Skip only when the context is actually suspended; visibility
@@ -266,23 +314,49 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
         for (let i = 0; i < rmsSamples.length; i++) sumSquares += rmsSamples[i] * rmsSamples[i];
         const rms = Math.sqrt(sumSquares / rmsSamples.length);
 
+        const now = Date.now();
+        if (now - lastRmsLogAt >= 1000) {
+          log('rms', {
+            rms: rms.toFixed(4),
+            ctxState: audioContext.state,
+            elapsedMs: now - recordingStartedAt,
+          });
+          lastRmsLogAt = now;
+        }
+
+        // OS-mute trip: RMS exactly 0 for OS_MUTE_THRESHOLD_MS while context
+        // is running and track is live = OS-level mic access denied. Surface
+        // a specific error and stop wasting the user's time waiting.
+        if (
+          !osMuteFlagged &&
+          rms === 0 &&
+          audioContext.state === 'running' &&
+          now - recordingStartedAt >= OS_MUTE_THRESHOLD_MS
+        ) {
+          osMuteFlagged = true;
+          abortWithError(micError('os-muted'));
+          return;
+        }
+
         if (rms > SILENCE_THRESHOLD) {
           speechDetected = true;
           silentSince = null;
         } else if (speechDetected) {
           if (silentSince === null) {
-            silentSince = Date.now();
-          } else if (Date.now() - silentSince >= SILENCE_TIMEOUT_SECONDS * 1000) {
+            silentSince = now;
+          } else if (now - silentSince >= SILENCE_TIMEOUT_SECONDS * 1000) {
             finishRecording();
           }
-        } else if (Date.now() - recordingStartedAt >= SILENCE_TIMEOUT_SECONDS * 1000) {
+        } else if (now - recordingStartedAt >= SILENCE_TIMEOUT_SECONDS * 1000) {
           finishRecording();
         }
       }, POLL_INTERVAL_MS);
 
       setIsRecording(true);
     } catch (err) {
+      console.error('[mic] startRecording failed', err);
       releaseCaptureGraph();
+      stoppingRef.current = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       const id = streamingIdRef.current;
@@ -299,6 +373,7 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
     return () => {
       finalizeRef.current = null;
       releaseCaptureGraph();
+      stoppingRef.current = true;
       streamRef.current?.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
       permissionUnsubscribeRef.current?.();
