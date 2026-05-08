@@ -83,7 +83,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'VoiceRound ${{ github.ref_name }}'
+          releaseName: 'VoiceRoundAI ${{ github.ref_name }}'
           releaseBody: |
             See [README](https://github.com/rajat-mehra05/voice-round#download) for install instructions.
 
