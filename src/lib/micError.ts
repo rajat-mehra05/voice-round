@@ -11,6 +11,7 @@ export type MicErrorKind =
   | 'permission-revoked'
   | 'device-in-use'
   | 'disconnected'
+  | 'os-muted'
   | 'constraint'
   | 'unknown';
 
@@ -32,7 +33,10 @@ const MESSAGES: Record<MicErrorKind, string> = {
     'Microphone access was revoked during the session. Re-enable it in system settings and retry.',
   'device-in-use':
     'The microphone is in use by another app. Close anything else that might be using it and retry.',
-  disconnected: 'Microphone disconnected. Please reconnect and try again.',
+  disconnected:
+    'Microphone was disconnected. This often happens when another app or browser extension takes the mic. Close other audio apps, disable browser extensions (especially privacy or ad-blocking ones), then click Retry.',
+  'os-muted':
+    'No audio is reaching the microphone. On macOS, open System Settings → Privacy & Security → Microphone and confirm your browser has access. On Windows, check Settings → Privacy → Microphone. Then click Retry.',
   constraint:
     "Your microphone doesn't match the required audio constraints. Try a different input device.",
   unknown: 'Recording failed unexpectedly.',
