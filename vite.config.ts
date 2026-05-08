@@ -25,10 +25,10 @@ export default defineConfig(({ mode }) => {
             navigateFallback: '/index.html',
           },
           manifest: {
-            name: 'VoiceRound',
-            short_name: 'VoiceRound',
+            name: 'VoiceRoundAI',
+            short_name: 'VoiceRoundAI',
             description:
-              'AI-powered mock interviewer for technical interview practice. Voice-based Q&A with detailed feedback.',
+              'VoiceRoundAI is an AI-powered mock interviewer for technical interview practice. Voice-based Q&A with detailed feedback.',
             id: '/',
             start_url: '/',
             scope: '/',

@@ -17,14 +17,14 @@ test('fetchLatestRelease returns tag_name + html_url + assets on a 200 response'
         body: 'release notes',
         assets: [
           {
-            name: 'VoiceRound_0.2.0_universal.dmg',
-            browser_download_url: 'https://example.com/VoiceRound_0.2.0_universal.dmg',
+            name: 'VoiceRoundAI_0.2.0_universal.dmg',
+            browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_universal.dmg',
             // Extra asset fields (size, id, ...) must be stripped on the way out.
             size: 12345,
           },
           {
-            name: 'VoiceRound_0.2.0_x64-setup.exe',
-            browser_download_url: 'https://example.com/VoiceRound_0.2.0_x64-setup.exe',
+            name: 'VoiceRoundAI_0.2.0_x64-setup.exe',
+            browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_x64-setup.exe',
           },
         ],
       }),
@@ -35,12 +35,12 @@ test('fetchLatestRelease returns tag_name + html_url + assets on a 200 response'
     html_url: 'https://github.com/example/repo/releases/tag/v0.2.0',
     assets: [
       {
-        name: 'VoiceRound_0.2.0_universal.dmg',
-        browser_download_url: 'https://example.com/VoiceRound_0.2.0_universal.dmg',
+        name: 'VoiceRoundAI_0.2.0_universal.dmg',
+        browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_universal.dmg',
       },
       {
-        name: 'VoiceRound_0.2.0_x64-setup.exe',
-        browser_download_url: 'https://example.com/VoiceRound_0.2.0_x64-setup.exe',
+        name: 'VoiceRoundAI_0.2.0_x64-setup.exe',
+        browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_x64-setup.exe',
       },
     ],
   });
@@ -61,32 +61,32 @@ test('fetchLatestRelease normalises a missing assets array to an empty list inst
 
 test('pickAssetForPlatform picks the universal .dmg for macOS when multiple dmgs exist', () => {
   const assets = [
-    { name: 'VoiceRound_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
-    { name: 'VoiceRound_0.2.0_universal.dmg', browser_download_url: 'https://x/u.dmg' },
+    { name: 'VoiceRoundAI_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
+    { name: 'VoiceRoundAI_0.2.0_universal.dmg', browser_download_url: 'https://x/u.dmg' },
   ];
-  expect(pickAssetForPlatform(assets, 'mac')?.name).toBe('VoiceRound_0.2.0_universal.dmg');
+  expect(pickAssetForPlatform(assets, 'mac')?.name).toBe('VoiceRoundAI_0.2.0_universal.dmg');
 });
 
 test('pickAssetForPlatform falls back to the first .dmg when no universal build is present', () => {
   const assets = [
-    { name: 'VoiceRound_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
+    { name: 'VoiceRoundAI_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
   ];
-  expect(pickAssetForPlatform(assets, 'mac')?.name).toBe('VoiceRound_0.2.0_aarch64.dmg');
+  expect(pickAssetForPlatform(assets, 'mac')?.name).toBe('VoiceRoundAI_0.2.0_aarch64.dmg');
 });
 
 test('pickAssetForPlatform prefers the NSIS setup.exe over other .exe binaries', () => {
   const assets = [
-    { name: 'VoiceRound_0.2.0_x64.nsis.zip', browser_download_url: 'https://x/z.zip' },
-    { name: 'VoiceRound_0.2.0_x64-setup.exe', browser_download_url: 'https://x/setup.exe' },
+    { name: 'VoiceRoundAI_0.2.0_x64.nsis.zip', browser_download_url: 'https://x/z.zip' },
+    { name: 'VoiceRoundAI_0.2.0_x64-setup.exe', browser_download_url: 'https://x/setup.exe' },
     // An updater .exe must NOT win over the NSIS installer.
-    { name: 'VoiceRound-updater.exe', browser_download_url: 'https://x/upd.exe' },
+    { name: 'VoiceRoundAI-updater.exe', browser_download_url: 'https://x/upd.exe' },
   ];
-  expect(pickAssetForPlatform(assets, 'windows')?.name).toBe('VoiceRound_0.2.0_x64-setup.exe');
+  expect(pickAssetForPlatform(assets, 'windows')?.name).toBe('VoiceRoundAI_0.2.0_x64-setup.exe');
 });
 
 test('pickAssetForPlatform returns null when no matching extension exists', () => {
   const assets = [
-    { name: 'VoiceRound_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
+    { name: 'VoiceRoundAI_0.2.0_aarch64.dmg', browser_download_url: 'https://x/a.dmg' },
   ];
   expect(pickAssetForPlatform(assets, 'windows')).toBeNull();
   expect(pickAssetForPlatform([], 'mac')).toBeNull();
@@ -96,7 +96,7 @@ test('pickAssetForPlatform returns null on Windows when only non-setup .exe bina
   // A loose fallback would hand the user a non-installer binary (e.g. a
   // standalone updater). Better to return null and let the UI surface
   // "Open releases page" so the user picks the right file themselves.
-  const assets = [{ name: 'VoiceRound-updater.exe', browser_download_url: 'https://x/upd.exe' }];
+  const assets = [{ name: 'VoiceRoundAI-updater.exe', browser_download_url: 'https://x/upd.exe' }];
   expect(pickAssetForPlatform(assets, 'windows')).toBeNull();
 });
 

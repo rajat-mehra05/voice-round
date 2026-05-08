@@ -1,3 +1,5 @@
+import { APP_NAME } from '@/constants/copy';
+
 /**
  * Decodes and plays a full-buffer mp3/wav/etc. Resolves when playback ends,
  * rejects on abort or decode error. Shared by web adapter; Tauri adapter uses
@@ -50,7 +52,7 @@ export async function playAudioArrayBuffer(
     // BASE_URL keeps artwork resolvable under Tauri's './' base.
     const baseUrl = import.meta.env.BASE_URL;
     mediaSession.metadata = new MediaMetadata({
-      title: 'VoiceRound',
+      title: APP_NAME,
       artist: 'Mock interview',
       artwork: [
         { src: `${baseUrl}icons/icon-192.png`, sizes: '192x192', type: 'image/png' },

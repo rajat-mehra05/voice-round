@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "VoiceRound",
+  "productName": "VoiceRoundAI",
   "version": "0.1.1",
   "identifier": "com.voiceround.app",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "VoiceRound",
+        "title": "VoiceRoundAI",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,

@@ -8,7 +8,7 @@ use tauri::{
 // keybindings. Window and App submenus match macOS conventions so the app
 // feels native on launch.
 pub fn build(app: &AppHandle) -> tauri::Result<Menu<Wry>> {
-    let app_menu = SubmenuBuilder::new(app, "VoiceRound")
+    let app_menu = SubmenuBuilder::new(app, "VoiceRoundAI")
         .about(Some(AboutMetadata::default()))
         .separator()
         .services()

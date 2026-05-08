@@ -4,6 +4,7 @@ import { StartModal } from '@/components/StartModal/StartModal';
 import { InstallSection } from '@/components/InstallSection/InstallSection';
 import { FEATURES } from '@/constants/home';
 import {
+  APP_NAME,
   HOME_BADGE,
   HOME_HERO_HEADING_LINE1,
   HOME_HERO_HEADING_LINE2,
@@ -81,7 +82,7 @@ export function Home() {
           <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" strokeWidth={3} />
           Why{' '}
           <span className="relative inline-block">
-            <span className="relative z-10">VoiceRound</span>
+            <span className="relative z-10">{APP_NAME}</span>
             <span
               className="absolute bottom-1 left-0 -z-0 h-2 w-full -rotate-1 bg-neo-accent sm:h-2.5"
               aria-hidden="true"

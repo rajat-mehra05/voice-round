@@ -1,3 +1,5 @@
+import { APP_NAME } from '@/constants/copy';
+
 /**
  * Structured microphone error taxonomy. One type per realistic failure mode,
  * plus a user-facing message. Callers branch on `kind` to decide whether to
@@ -27,8 +29,7 @@ const MESSAGES: Record<MicErrorKind, string> = {
   unsupported:
     "Your browser doesn't support audio recording. Please use a recent version of Chrome, Firefox, or Safari.",
   'no-device': 'No microphone detected. Please connect a microphone and try again.',
-  'permission-denied':
-    'Microphone access is blocked. Open system settings and allow VoiceRound to use the microphone.',
+  'permission-denied': `Microphone access is blocked. Open system settings and allow ${APP_NAME} to use the microphone.`,
   'permission-revoked':
     'Microphone access was revoked during the session. Re-enable it in system settings and retry.',
   'device-in-use':

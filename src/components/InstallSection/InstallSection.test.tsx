@@ -13,12 +13,12 @@ vi.mock('@/lib/triggerDownload', () => ({
 
 const RELEASES_API = 'https://api.github.com/repos/rajat-mehra05/voice-round/releases/latest';
 const MAC_ASSET = {
-  name: 'VoiceRound_0.2.0_universal.dmg',
-  browser_download_url: 'https://example.com/VoiceRound_0.2.0_universal.dmg',
+  name: 'VoiceRoundAI_0.2.0_universal.dmg',
+  browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_universal.dmg',
 };
 const WIN_ASSET = {
-  name: 'VoiceRound_0.2.0_x64-setup.exe',
-  browser_download_url: 'https://example.com/VoiceRound_0.2.0_x64-setup.exe',
+  name: 'VoiceRoundAI_0.2.0_x64-setup.exe',
+  browser_download_url: 'https://example.com/VoiceRoundAI_0.2.0_x64-setup.exe',
 };
 const MAC_UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15';
 const WIN_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
