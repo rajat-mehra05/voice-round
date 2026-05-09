@@ -45,13 +45,10 @@ test('open panel surfaces its answer text', async () => {
   const user = userEvent.setup();
   renderWithProviders(<FAQSection />);
 
-  await user.click(screen.getByRole('button', { name: FAQ_ITEMS[0].question }));
-
-  // The answer associated with the first question is now reachable in the
-  // accessibility tree. Use a substring match so we don't depend on the
-  // exact wording surviving copy edits.
+  // base-ui keeps closed panels mounted, so assert toBeVisible to prove expansion.
   const answerStart = FAQ_ITEMS[0].answer.slice(0, 40);
-  expect(
-    screen.getByText(new RegExp(answerStart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')),
-  ).toBeInTheDocument();
+  const answerMatcher = new RegExp(answerStart.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+
+  await user.click(screen.getByRole('button', { name: FAQ_ITEMS[0].question }));
+  expect(screen.getByText(answerMatcher)).toBeVisible();
 });

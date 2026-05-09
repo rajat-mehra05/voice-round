@@ -72,6 +72,15 @@ export function Layout({ children }: { children: ReactNode }) {
     if (mobileMenuOpen) menuItemRefs.current[0]?.focus();
   }, [mobileMenuOpen]);
 
+  // Reset mobile menu on route change so it doesn't render pre-opened after
+  // the dropdown remounts (e.g. coming back from /session). Render-time
+  // pattern per React docs, not an effect.
+  const [prevPathname, setPrevPathname] = useState(location.pathname);
+  if (prevPathname !== location.pathname) {
+    setPrevPathname(location.pathname);
+    setMobileMenuOpen(false);
+  }
+
   // Global shortcut: Cmd+, (macOS) / Ctrl+, (Windows/Linux) opens Settings.
   // Skip when typing in an editable field so the modal does not interrupt input.
   useEffect(() => {
