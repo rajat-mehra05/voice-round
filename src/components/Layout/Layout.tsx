@@ -3,12 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { SettingsModal } from '@/components/SettingsModal/SettingsModal';
-import {
-  APP_DISPLAY_NAME,
-  APP_NAME,
-  GITHUB_REPO_URL,
-  HEADER_GITHUB_STAR_LABEL,
-} from '@/constants/copy';
+import { APP_NAME, GITHUB_REPO_URL, HEADER_GITHUB_STAR_LABEL } from '@/constants/copy';
 import { useHasSessions } from '@/hooks/useHasSessions/useHasSessions';
 import { cn } from '@/lib/utils';
 import logoSvg from '@/assets/logo.svg';
@@ -125,7 +120,7 @@ export function Layout({ children }: { children: ReactNode }) {
               className="h-11 w-11"
             />
             <span className="text-xl font-bold uppercase leading-none tracking-tight text-black">
-              {APP_DISPLAY_NAME}
+              {APP_NAME}
             </span>
           </Link>
 

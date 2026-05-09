@@ -6,7 +6,7 @@ import { FAQSection } from '@/components/FAQSection/FAQSection';
 import { ChangelogPill } from '@/components/ChangelogPill/ChangelogPill';
 import { FEATURES } from '@/constants/home';
 import {
-  APP_DISPLAY_NAME,
+  APP_NAME,
   FOOTER_TAGLINE,
   HOME_BADGE,
   HOME_HERO_HEADING_LINE1,
@@ -82,7 +82,7 @@ export function Home() {
           <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" strokeWidth={3} />
           Why{' '}
           <span className="relative inline-block">
-            <span className="relative z-10">{APP_DISPLAY_NAME}</span>
+            <span className="relative z-10">{APP_NAME}</span>
             <span
               className="absolute bottom-1 left-0 -z-0 h-2 w-full -rotate-1 bg-neo-accent sm:h-2.5"
               aria-hidden="true"
@@ -138,14 +138,14 @@ export function Home() {
         <div className="flex items-center gap-3">
           <img src={logoSvg} alt="" aria-hidden="true" className="h-12 w-12" />
           <span className="text-2xl font-black uppercase tracking-tight text-black">
-            {APP_DISPLAY_NAME}
+            {APP_NAME}
           </span>
         </div>
         <p className="max-w-xl text-base font-medium leading-relaxed text-black/70">
           {FOOTER_TAGLINE}
         </p>
         <p className="text-xs font-medium text-black/50">
-          MIT License © {new Date().getFullYear()} {APP_DISPLAY_NAME}
+          MIT License © {new Date().getFullYear()} {APP_NAME}
         </p>
       </footer>
 
