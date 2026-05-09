@@ -29,7 +29,7 @@ interface ByokExplainerModalProps {
 export function ByokExplainerModal({ open, onOpenChange }: ByokExplainerModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{BYOK_MODAL_TITLE}</DialogTitle>
           <DialogDescription>{BYOK_MODAL_DESCRIPTION}</DialogDescription>

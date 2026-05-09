@@ -2,9 +2,12 @@ import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { StartModal } from '@/components/StartModal/StartModal';
 import { InstallSection } from '@/components/InstallSection/InstallSection';
+import { FAQSection } from '@/components/FAQSection/FAQSection';
+import { ChangelogPill } from '@/components/ChangelogPill/ChangelogPill';
 import { FEATURES } from '@/constants/home';
 import {
-  APP_NAME,
+  APP_DISPLAY_NAME,
+  FOOTER_TAGLINE,
   HOME_BADGE,
   HOME_HERO_HEADING_LINE1,
   HOME_HERO_HEADING_LINE2,
@@ -12,13 +15,8 @@ import {
   HOME_HERO_TAGLINE,
   HOME_START_LABEL,
   HOME_CTA_HINT,
-  HOME_DESKTOP_CTA_HINT,
-  HOME_DESKTOP_CTA_LABEL,
-  HOME_FOOTER_OPEN_SOURCE,
-  GITHUB_REPO_URL,
-  GITHUB_ISSUES_URL,
-  GITHUB_RELEASES_URL,
 } from '@/constants/copy';
+import logoSvg from '@/assets/logo.svg';
 
 function preloadSession() {
   void import('@/pages/Session/Session');
@@ -29,6 +27,8 @@ export function Home() {
 
   return (
     <div className="flex flex-1 flex-col gap-16 py-4 sm:gap-20">
+      <ChangelogPill />
+
       {/* Hero — left copy, right CTA */}
       <section className="flex flex-col items-center gap-10 lg:flex-row lg:gap-16">
         {/* Left: copy */}
@@ -82,7 +82,7 @@ export function Home() {
           <ChevronRight className="h-6 w-6 sm:h-7 sm:w-7" aria-hidden="true" strokeWidth={3} />
           Why{' '}
           <span className="relative inline-block">
-            <span className="relative z-10">{APP_NAME}</span>
+            <span className="relative z-10">{APP_DISPLAY_NAME}</span>
             <span
               className="absolute bottom-1 left-0 -z-0 h-2 w-full -rotate-1 bg-neo-accent sm:h-2.5"
               aria-hidden="true"
@@ -131,50 +131,22 @@ export function Home() {
         </section>
       ) : null}
 
+      <FAQSection />
+
       {/* Footer */}
-      <footer className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 pb-4 text-center text-sm font-bold text-black/60">
-        <span>{HOME_FOOTER_OPEN_SOURCE}</span>
-        <span aria-hidden="true" className="text-black/20">
-          |
-        </span>
-        <a
-          href={GITHUB_REPO_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-black"
-        >
-          GitHub
-        </a>
-        <span aria-hidden="true" className="text-black/20">
-          |
-        </span>
-        <a
-          href={GITHUB_ISSUES_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="underline hover:text-black"
-        >
-          Open an issue
-        </a>
-        {/* Desktop download CTA — web-only and hidden on mobile (links a
-            .dmg/.exe which the user can't run on a phone). PWA.4 replaces
-            this with a per-device-aware install path. */}
-        {import.meta.env.VITE_TARGET !== 'tauri' ? (
-          <>
-            <span aria-hidden="true" className="hidden text-black/20 md:inline">
-              |
-            </span>
-            <a
-              href={GITHUB_RELEASES_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden underline hover:text-black md:inline"
-              title={`${HOME_DESKTOP_CTA_HINT} macOS · Windows`}
-            >
-              {HOME_DESKTOP_CTA_LABEL}
-            </a>
-          </>
-        ) : null}
+      <footer className="flex flex-col items-center gap-6 pb-8 pt-12 text-center">
+        <div className="flex items-center gap-3">
+          <img src={logoSvg} alt="" aria-hidden="true" className="h-12 w-12" />
+          <span className="text-2xl font-black uppercase tracking-tight text-black">
+            {APP_DISPLAY_NAME}
+          </span>
+        </div>
+        <p className="max-w-xl text-base font-medium leading-relaxed text-black/70">
+          {FOOTER_TAGLINE}
+        </p>
+        <p className="text-xs font-medium text-black/50">
+          MIT License © {new Date().getFullYear()} {APP_DISPLAY_NAME}
+        </p>
       </footer>
 
       <StartModal open={startOpen} onOpenChange={setStartOpen} />

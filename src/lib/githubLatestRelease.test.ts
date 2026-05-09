@@ -5,7 +5,7 @@ import { fetchLatestRelease, pickAssetForPlatform } from './githubLatestRelease'
 
 const RELEASES_URL = 'https://api.github.com/repos/rajat-mehra05/voice-round/releases/latest';
 
-test('fetchLatestRelease returns tag_name + html_url + assets on a 200 response', async () => {
+test('fetchLatestRelease returns tag_name + html_url + assets + body on a 200 response', async () => {
   server.use(
     http.get(RELEASES_URL, () =>
       HttpResponse.json({
@@ -33,6 +33,7 @@ test('fetchLatestRelease returns tag_name + html_url + assets on a 200 response'
   await expect(fetchLatestRelease()).resolves.toEqual({
     tag_name: 'v0.2.0',
     html_url: 'https://github.com/example/repo/releases/tag/v0.2.0',
+    body: 'release notes',
     assets: [
       {
         name: 'VoiceRoundAI_0.2.0_universal.dmg',
@@ -57,6 +58,21 @@ test('fetchLatestRelease normalises a missing assets array to an empty list inst
     ),
   );
   await expect(fetchLatestRelease()).resolves.toMatchObject({ assets: [] });
+});
+
+test('fetchLatestRelease leaves body undefined when the upstream payload omits it', async () => {
+  // Releases without body still serve as auto-update signals; the changelog
+  // popover hook hides the pill when bullets cannot be parsed.
+  server.use(
+    http.get(RELEASES_URL, () =>
+      HttpResponse.json({
+        tag_name: 'v0.2.0',
+        html_url: 'https://github.com/example/repo/releases/tag/v0.2.0',
+      }),
+    ),
+  );
+  const release = await fetchLatestRelease();
+  expect(release.body).toBeUndefined();
 });
 
 test('pickAssetForPlatform picks the universal .dmg for macOS when multiple dmgs exist', () => {

@@ -2,9 +2,21 @@ import { expect, test } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { platform } from '@/platform';
+import { makeSession } from '@/test/factories';
 import { Layout } from './Layout';
 
+async function seedOneSession(): Promise<void> {
+  await platform.storage.sessions.deleteAll();
+  await platform.storage.sessions.create(makeSession());
+}
+
+async function clearSessions(): Promise<void> {
+  await platform.storage.sessions.deleteAll();
+}
+
 test('mobile hamburger opens dropdown with History and Settings, then closes on navigation', async () => {
+  await seedOneSession();
   const user = userEvent.setup();
 
   renderWithProviders(
@@ -13,24 +25,19 @@ test('mobile hamburger opens dropdown with History and Settings, then closes on 
     </Layout>,
   );
 
-  // Main content renders
   expect(screen.getByText('Page content')).toBeInTheDocument();
-
-  // Home link in nav
   expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
 
-  // Mobile menu button exists
-  const menuButton = screen.getByRole('button', { name: /open menu/i });
+  // Mobile menu only renders once a saved session exists. Wait for the
+  // useHasSessions effect to resolve before asserting it appears.
+  const menuButton = await screen.findByRole('button', { name: /open menu/i });
   expect(menuButton).toBeInTheDocument();
 
-  // Open the mobile menu
   await user.click(menuButton);
 
-  // Button label updates to "Close menu" and aria-expanded is true
   const closeButton = screen.getByRole('button', { name: /close menu/i });
   expect(closeButton).toHaveAttribute('aria-expanded', 'true');
 
-  // Dropdown has menu with menuitem roles
   const menu = screen.getByRole('menu');
   expect(menu).toBeInTheDocument();
 
@@ -41,12 +48,12 @@ test('mobile hamburger opens dropdown with History and Settings, then closes on 
   const settingsItem = menuItems.find((el) => el.textContent === 'Settings')!;
   expect(settingsItem).toBeInTheDocument();
 
-  // Click mobile History — dropdown should close
   await user.click(historyItem);
   expect(screen.getByRole('button', { name: /open menu/i })).toBeInTheDocument();
 });
 
 test('mobile Settings button opens SettingsModal', async () => {
+  await seedOneSession();
   const user = userEvent.setup();
 
   renderWithProviders(
@@ -55,20 +62,18 @@ test('mobile Settings button opens SettingsModal', async () => {
     </Layout>,
   );
 
-  // Open mobile menu
-  await user.click(screen.getByRole('button', { name: /open menu/i }));
+  await user.click(await screen.findByRole('button', { name: /open menu/i }));
 
-  // Click the mobile Settings menuitem
   const menuItems = screen.getAllByRole('menuitem');
   const settingsItem = menuItems.find((el) => el.textContent === 'Settings')!;
   await user.click(settingsItem);
 
-  // SettingsModal opens (dialog makes rest of page aria-hidden, so check the dialog itself)
   expect(await screen.findByRole('dialog', { name: /settings/i })).toBeInTheDocument();
   expect(screen.getByLabelText(/openai api key/i)).toBeInTheDocument();
 });
 
 test('mobile menu supports ArrowDown, ArrowUp, and Escape keyboard navigation', async () => {
+  await seedOneSession();
   const user = userEvent.setup();
 
   renderWithProviders(
@@ -77,38 +82,32 @@ test('mobile menu supports ArrowDown, ArrowUp, and Escape keyboard navigation', 
     </Layout>,
   );
 
-  // Open mobile menu
-  await user.click(screen.getByRole('button', { name: /open menu/i }));
+  await user.click(await screen.findByRole('button', { name: /open menu/i }));
 
   const menuItems = screen.getAllByRole('menuitem');
   const [historyItem, settingsItem] = menuItems;
 
-  // First item is focused on open
   expect(historyItem).toHaveFocus();
 
-  // ArrowDown moves to next item
   await user.keyboard('{ArrowDown}');
   expect(settingsItem).toHaveFocus();
 
-  // ArrowDown wraps to first item
   await user.keyboard('{ArrowDown}');
   expect(historyItem).toHaveFocus();
 
-  // ArrowUp wraps to last item
   await user.keyboard('{ArrowUp}');
   expect(settingsItem).toHaveFocus();
 
-  // ArrowUp moves to previous item
   await user.keyboard('{ArrowUp}');
   expect(historyItem).toHaveFocus();
 
-  // Escape closes the menu and returns focus to the toggle button
   await user.keyboard('{Escape}');
   expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: /open menu/i })).toHaveFocus();
 });
 
 test('desktop Settings button opens SettingsModal', async () => {
+  await seedOneSession();
   const user = userEvent.setup();
 
   renderWithProviders(
@@ -117,14 +116,14 @@ test('desktop Settings button opens SettingsModal', async () => {
     </Layout>,
   );
 
-  // The desktop Settings button (not inside the mobile menu)
-  const desktopSettingsButton = screen.getByRole('button', { name: /settings/i });
+  const desktopSettingsButton = await screen.findByRole('button', { name: /settings/i });
   await user.click(desktopSettingsButton);
 
   expect(await screen.findByRole('dialog', { name: /settings/i })).toBeInTheDocument();
 });
 
 test('Cmd+, keyboard shortcut opens SettingsModal and is guarded against editable-field focus', async () => {
+  await clearSessions();
   const user = userEvent.setup();
 
   renderWithProviders(
@@ -135,19 +134,19 @@ test('Cmd+, keyboard shortcut opens SettingsModal and is guarded against editabl
 
   expect(screen.queryByRole('dialog', { name: /settings/i })).not.toBeInTheDocument();
 
-  // Typing in an input: Cmd+, must NOT hijack the keystroke and pop the modal.
   const input = screen.getByRole('textbox', { name: /name/i });
   await user.click(input);
   await user.keyboard('{Meta>},{/Meta}');
   expect(screen.queryByRole('dialog', { name: /settings/i })).not.toBeInTheDocument();
 
-  // Outside any input: Cmd+, opens Settings. Same handler also matches Ctrl+, on Windows/Linux.
   input.blur();
   await user.keyboard('{Meta>},{/Meta}');
   expect(await screen.findByRole('dialog', { name: /settings/i })).toBeInTheDocument();
 });
 
-test('skip-to-content link and landmarks are accessible', () => {
+test('skip-to-content link and landmarks are accessible', async () => {
+  await clearSessions();
+
   renderWithProviders(
     <Layout>
       <p>Content</p>
@@ -157,4 +156,61 @@ test('skip-to-content link and landmarks are accessible', () => {
   expect(screen.getByText(/skip to content/i)).toBeInTheDocument();
   expect(screen.getByRole('navigation', { name: /main navigation/i })).toBeInTheDocument();
   expect(screen.getByRole('main')).toBeInTheDocument();
+});
+
+test('first-time visitor on home sees logo and Star on GitHub but no History or Settings', async () => {
+  await clearSessions();
+
+  renderWithProviders(
+    <Layout>
+      <p>Page content</p>
+    </Layout>,
+    { initialRoute: '/' },
+  );
+
+  // Star on GitHub link is present on the home route.
+  const starLink = await screen.findByRole('link', { name: /star on github/i });
+  expect(starLink).toHaveAttribute('href', 'https://github.com/rajat-mehra05/voice-round');
+  expect(starLink).toHaveAttribute('target', '_blank');
+
+  // History/Settings stay hidden until the first session is saved.
+  expect(screen.queryByRole('button', { name: /^settings$/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /^history$/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument();
+});
+
+test('Star on GitHub is hidden on non-home routes', async () => {
+  await seedOneSession();
+
+  renderWithProviders(
+    <Layout>
+      <p>Page content</p>
+    </Layout>,
+    { initialRoute: '/history' },
+  );
+
+  // Wait for the actions to render (proves useHasSessions has resolved) before
+  // asserting Star is absent — otherwise we could be reading the loading state.
+  await screen.findByRole('button', { name: /^settings$/i });
+  expect(screen.queryByRole('link', { name: /star on github/i })).not.toBeInTheDocument();
+});
+
+test('History and Settings are hidden during an active interview at /session', async () => {
+  await seedOneSession();
+
+  renderWithProviders(
+    <Layout>
+      <p>Recording…</p>
+    </Layout>,
+    { initialRoute: '/session' },
+  );
+
+  // Session route never shows History/Settings/Star, even with saved sessions.
+  // Wait a tick so useHasSessions effect runs; if buttons were going to appear
+  // they would by the time the page content is in the DOM.
+  expect(await screen.findByText('Recording…')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /^settings$/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /^history$/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /star on github/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /open menu/i })).not.toBeInTheDocument();
 });
