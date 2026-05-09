@@ -57,7 +57,7 @@ export function ChangelogPill() {
           {changelog.version}. {CHANGELOG_PILL_LABEL}
         </PreviewCard.Trigger>
         <PreviewCard.Portal>
-          <PreviewCard.Positioner sideOffset={8} align="center">
+          <PreviewCard.Positioner sideOffset={8} align="center" className="z-50">
             <PreviewCard.Popup className="max-h-[60vh] w-[min(calc(100vw-2rem),28rem)] overflow-y-auto border-4 border-black bg-neo-cream p-5 shadow-neo-md transition-[opacity,transform] duration-150 ease-out data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
               <div className="mb-3 flex items-center justify-between gap-3 border-b-2 border-black pb-2">
                 <h3 className="text-sm font-black uppercase tracking-tight text-black">

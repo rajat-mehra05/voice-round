@@ -1,7 +1,6 @@
 import { SILENCE_TIMEOUT_SECONDS } from '@/constants/session';
 
 export const APP_NAME = 'VoiceRoundAI';
-export const APP_DISPLAY_NAME = 'Voice RoundAI';
 export const HEADER_GITHUB_STAR_LABEL = 'Star on GitHub';
 
 export const API_KEY_DESCRIPTION =

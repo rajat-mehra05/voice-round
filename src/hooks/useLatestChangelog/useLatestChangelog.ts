@@ -45,30 +45,49 @@ export function useLatestChangelog(): Changelog | undefined {
 }
 
 /*
-  Strips the `* `, `- `, `+ ` markers from markdown bullets, plus the
-  GitHub-auto-generated `by @user ...` attribution. The attribution can
-  appear as `by @user`, `by @user in #42`, or `by @user in https://...`,
-  so we greedily strip from `by @<handle>` through end of line.
+  Strips the `* `, `- `, `+ ` markers from markdown bullets, the
+  GitHub-auto-generated `by @user ...` attribution (can appear as
+  `by @user`, `by @user in #42`, or `by @user in https://...`, so we
+  greedily drop from `by @<handle>` through end of line), and the
+  conventional-commit type prefix (`feat:`, `fix:`, `chore:`, etc.)
+  which is engineer-facing noise in a user-visible changelog. After
+  stripping the prefix we capitalise the first letter so bullets read
+  as proper sentences, with two safeguards: (1) we only capitalise
+  when a prefix was actually stripped, since bullets without one were
+  authored with intentional casing, and (2) we skip capitalisation
+  when the second character is uppercase, to avoid mangling brand
+  acronyms like `iOS` into `IOS`.
 */
-function parseBullets(body: string): string[] {
+const CONVENTIONAL_PREFIX =
+  /^(?:feat|fix|chore|perf|refactor|docs|style|test|build|ci|revert)(?:\([^)]+\))?!?:\s*/i;
+
+// Matches the auto-generated attribution at the start of a bullet (rare,
+// happens when the bullet is just `by @user`) or after content
+// (`feat: thing by @user in #42`). Anchored so it greedily eats to EOL.
+const ATTRIBUTION = /(?:^|\s+)by\s+@[\w-]+.*$/i;
+
+export function parseBullets(body: string): string[] {
   return body
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => /^[*\-+]\s+/.test(line))
-    .map((line) =>
-      line
-        .replace(/^[*\-+]\s+/, '')
-        .replace(/\s+by\s+@[\w-]+.*$/i, '')
-        .trim(),
-    )
+    .map((line) => {
+      const beforePrefix = line.replace(/^[*\-+]\s+/, '').replace(ATTRIBUTION, '');
+      const afterPrefix = beforePrefix.replace(CONVENTIONAL_PREFIX, '');
+      const cleaned = afterPrefix.trim();
+      const prefixWasStripped = afterPrefix !== beforePrefix;
+      const shouldCapitalise =
+        prefixWasStripped && cleaned.length >= 2 && /^[a-z][a-z]/.test(cleaned);
+      return shouldCapitalise ? cleaned.charAt(0).toUpperCase() + cleaned.slice(1) : cleaned;
+    })
     .filter((line) => line.length > 0);
 }
 
 /*
-  Maps a semver tag to a user-facing category badge. In pre-1.0 (v0.x)
-  land the public surface is not stable, so any `0.X.0` bump (Y change
-  with no patch) is shown as Major. Once we hit v1.0.0+ the standard
-  semver position rules apply: X bump = Major, Y bump = Minor, Z = Patch.
+  Maps a semver tag to a user-facing category badge. Pre-1.0 (v0.x): a
+  `0.X.0` bump is Minor, a `0.X.Y` patch is Patch. We never show Major
+  before v1.0.0 — saving the badge for the actual stability promise
+  prevents badge fatigue and matches how users read the version.
 */
 function categorizeRelease(tag: string): ReleaseCategory {
   const match = tag.match(/^v?(\d+)\.(\d+)\.(\d+)/);
@@ -77,7 +96,7 @@ function categorizeRelease(tag: string): ReleaseCategory {
   const minor = Number(match[2]);
   const patch = Number(match[3]);
   if (major === 0) {
-    return patch > 0 ? 'patch' : 'major';
+    return patch > 0 ? 'patch' : 'minor';
   }
   if (patch > 0) return 'patch';
   if (minor > 0) return 'minor';
