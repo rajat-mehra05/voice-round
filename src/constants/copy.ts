@@ -1,6 +1,8 @@
 import { SILENCE_TIMEOUT_SECONDS } from '@/constants/session';
 
 export const APP_NAME = 'VoiceRoundAI';
+export const APP_DISPLAY_NAME = 'Voice RoundAI';
+export const HEADER_GITHUB_STAR_LABEL = 'Star on GitHub';
 
 export const API_KEY_DESCRIPTION =
   'This app requires your own OpenAI API key. Your key stays on your device and is only sent to OpenAI.';
@@ -23,7 +25,15 @@ export const HOME_HERO_BODY =
 export const HOME_HERO_TAGLINE = 'No fluff. Just honest feedback. Real improvement.';
 export const HOME_START_LABEL = 'Start new interview session';
 export const HOME_CTA_HINT = 'Ready when you are.';
-export const HOME_FOOTER_OPEN_SOURCE = 'Fully Open source ❤️';
+export const FOOTER_TAGLINE =
+  'An open-source AI mock interviewer for technical interview practice. Built for developers preparing for their next role.';
+
+// Changelog pill (shown on home page, hover opens popover with release notes)
+export const CHANGELOG_PILL_LABEL = "Check what's new";
+export const CHANGELOG_POPUP_TITLE_PREFIX = "What's new in";
+export const CHANGELOG_BADGE_MAJOR = 'Major Update';
+export const CHANGELOG_BADGE_MINOR = 'Minor Update';
+export const CHANGELOG_BADGE_PATCH = 'Patch Update';
 export const GITHUB_REPO_URL = 'https://github.com/rajat-mehra05/voice-round';
 export const GITHUB_ISSUES_URL = 'https://github.com/rajat-mehra05/voice-round/issues';
 export const GITHUB_RELEASES_URL = 'https://github.com/rajat-mehra05/voice-round/releases/latest';
@@ -68,6 +78,45 @@ export const INSTALL_DOWNLOAD_HEADING = 'Download';
 export const INSTALL_DOWNLOAD_PRIMARY_MAC = 'Download for macOS';
 export const INSTALL_DOWNLOAD_PRIMARY_WINDOWS = 'Download for Windows';
 export const INSTALL_DOWNLOAD_ALSO_FOR = 'Also available for';
+
+// FAQ section (home page)
+export const FAQ_ITEMS = [
+  {
+    question: 'Is it really free?',
+    answer:
+      "Yes. VoiceRoundAI is open-source under MIT license. The only cost is your own OpenAI API usage, which runs a few cents per interview session. Your key stays on your device. We never see it and can't bill you.",
+  },
+  {
+    question: 'How much does it cost to use?',
+    answer:
+      "You pay only OpenAI's standard token pricing. A typical 5-question mock interview costs a few cents at current GPT-4o-mini rates. There is no VoiceRoundAI subscription, transaction fee or markup.",
+  },
+  {
+    question: 'Where do I get an OpenAI API key?',
+    answer:
+      "Sign in at platform.openai.com/api-keys and create a new key from your account dashboard. Paste it into VoiceRoundAI's settings on first launch. The app stores the key locally and only sends it to OpenAI directly.",
+  },
+  {
+    question: 'What permissions do I need to provide?',
+    answer:
+      'Microphone access, so the app can record your spoken answers. That is the only OS-level permission. The browser also needs network access to reach OpenAI for question generation, transcription and feedback. No camera, no contacts, no location.',
+  },
+  {
+    question: 'Is my data safe?',
+    answer:
+      "Yes. Every interview, transcript and feedback report lives only on your device. In your browser's IndexedDB on the web, or on disk inside the desktop app. Nothing is sent to our servers because we do not have any. Your OpenAI key is also local: in the OS Keychain on desktop, in IndexedDB on the web.",
+  },
+  {
+    question: 'Why does macOS say "VoiceRoundAI is damaged and can\'t be opened"?',
+    answer:
+      'The desktop build is not signed with a paid Apple Developer certificate, so macOS Gatekeeper blocks it on first launch. Right-click VoiceRoundAI in /Applications, choose Open, then click Open again in the confirmation dialog. macOS will trust it from then on. If the right-click menu does not show Open, run this once in Terminal: xattr -dr com.apple.quarantine /Applications/VoiceRoundAI.app',
+  },
+  {
+    question: 'Will there be more updates?',
+    answer:
+      'Yes. The project is actively maintained. New interview topics, bug fixes and quality improvements ship through tagged GitHub releases. Contributions from the community are welcome.',
+  },
+] as const;
 
 // Common
 export const COMMON_GOT_IT = 'Got it';

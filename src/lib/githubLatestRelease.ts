@@ -14,6 +14,9 @@ export interface GitHubRelease {
   // `fetchLatestRelease` normalises to `[]` when the upstream payload omits it,
   // so asset consumers can skip the null check.
   assets: GitHubReleaseAsset[];
+  // Markdown release notes. Optional because some releases ship without a
+  // body (older versions, drafts promoted to releases, etc).
+  body?: string;
 }
 
 // Throws on any failure so callers can distinguish "here's the latest"
@@ -41,7 +44,12 @@ export async function fetchLatestRelease(): Promise<GitHubRelease> {
           )
           .map((a) => ({ name: a.name, browser_download_url: a.browser_download_url }))
       : [];
-    return { tag_name: body.tag_name, html_url: body.html_url, assets };
+    return {
+      tag_name: body.tag_name,
+      html_url: body.html_url,
+      assets,
+      body: typeof body.body === 'string' ? body.body : undefined,
+    };
   } finally {
     clearTimeout(timer);
   }
